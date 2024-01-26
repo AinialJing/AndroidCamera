@@ -21,7 +21,6 @@ import android.os.HandlerThread;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
-import android.view.Surface;
 import android.view.TextureView;
 
 import java.util.ArrayList;
@@ -65,29 +64,8 @@ public class Camera2WithYUV {
         mYuvUtil=new YuvUtil();
     }
 
-    public void initTexture(TextureView textureView) {
-        Log.e(TAG, "initTexture:" + textureView);
-        mTextureView = textureView;
-        mTextureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                openCamera();
-            }
-
-            @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-
-            }
-
-            @Override
-            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-                return true;
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-            }
-        });
+    public void initTexture() {
+        openCamera();
     }
 
     @SuppressLint("MissingPermission")
@@ -113,7 +91,7 @@ public class Camera2WithYUV {
                     orientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
                     //maxImages 此时需要2路，一路渲染到屏幕，一路用于网络传输
                     mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(),
-                            ImageFormat.YUV_420_888, 2);
+                            ImageFormat.YUV_420_888, 1);
                     mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mCameraHandler);
                     cameraManager.openCamera(mCameraId, mCameraDeviceStateCallback, mCameraHandler);
                 }
@@ -130,18 +108,18 @@ public class Camera2WithYUV {
         public void onOpened(CameraDevice camera) {
             try {
                 mCameraDevice = camera;
-                SurfaceTexture surfaceTexture = mTextureView.getSurfaceTexture();
-                surfaceTexture.setDefaultBufferSize(1280, 720);
-                //Surface负责渲染
-                Surface previewSurface = new Surface(surfaceTexture);
+//                SurfaceTexture surfaceTexture = mTextureView.getSurfaceTexture();
+//                surfaceTexture.setDefaultBufferSize(1280, 720);
+//                //Surface负责渲染
+//                Surface previewSurface = new Surface(surfaceTexture);
                 //创建请求
                 mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 mPreviewBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRanges);
                 mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                mPreviewBuilder.addTarget(previewSurface);
+//                mPreviewBuilder.addTarget(previewSurface);
                 mPreviewBuilder.addTarget(mImageReader.getSurface());
                 //创建会话
-                mCameraDevice.createCaptureSession(Arrays.asList(previewSurface, mImageReader.getSurface()), mCaptureSessionStateCallBack, mCameraHandler);
+                mCameraDevice.createCaptureSession(Arrays.asList(mImageReader.getSurface()), mCaptureSessionStateCallBack, mCameraHandler);
             } catch (CameraAccessException e) {
                 e.printStackTrace();
                 Log.e(TAG, "onOpened:" + e.getMessage());
